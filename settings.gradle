@@ -1,0 +1,2 @@
+include ':app', ':yellowknife-api', ':yellowknife-compiler', ':YellowKnife-annotation'
+rootProject.name='YellowKnifeDemo'
