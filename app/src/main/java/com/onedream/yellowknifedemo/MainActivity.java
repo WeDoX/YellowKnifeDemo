@@ -7,6 +7,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.onedream.TwoActivity;
 import com.onedream.yellowknife_annotation.YellowKnifeBindView;
 import com.onedream.yellowknife_annotation.YellowKnifeClickView;
 import com.onedream.yellowknife_api.UnBinder;
@@ -40,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
     @YellowKnifeClickView(viewId = R.id.btn_get)
     public void onClickBtnGet(View view){
         showToast("我是第二个函数是"+view.getId());
+        //
+        TwoActivity.actionStart(MainActivity.this);
     }
 
 
