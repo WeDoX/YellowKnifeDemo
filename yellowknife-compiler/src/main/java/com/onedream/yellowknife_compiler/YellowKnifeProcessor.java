@@ -56,52 +56,25 @@ public class YellowKnifeProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Map<String, Map<String, Set<Element>>> elementMap = parseElements(roundEnv.getElementsAnnotatedWith(YellowKnifeBindView.class));
+        Map<String, Map<String, Set<Element>>> elementMap = parseFieldElements(roundEnv.getElementsAnnotatedWith(YellowKnifeBindView.class));
         Map<String, Map<String, Set<Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(YellowKnifeClickView.class));
         generateJavaFile(elementMap, methodMap);
         return true;
     }
 
+    private Map<String, Map<String, Set<Element>>> parseFieldElements(Set<? extends Element> elements) {
+        return parseElements(elements, ElementKind.FIELD);
+    }
 
-    private Map<String, Map<String, Set<Element>>> parseElements(Set<? extends Element> elements) {
+    private Map<String, Map<String, Set<Element>>> parseMethodElements(Set<? extends Element> elements) {
+        return parseElements(elements, ElementKind.METHOD);
+    }
+
+    private Map<String, Map<String, Set<Element>>> parseElements(Set<? extends Element> elements, ElementKind elementKind) {
         Map<String, Map<String, Set<Element>>> elementMap = new LinkedHashMap<>();
         // 遍历全部元素
         for (Element element : elements) {
-            if (!element.getKind().isField()) {//不是变量直接跳过
-                continue;
-            }
-
-            TypeElement typeElement = (TypeElement) element.getEnclosingElement();
-            // 获取类名
-            String typeName = typeElement.getSimpleName().toString();
-            // 获取类的上一级元素，即包元素
-            PackageElement packageElement = (PackageElement) typeElement.getEnclosingElement();
-            // 获取包名
-            String packageName = packageElement.getQualifiedName().toString();
-
-            Map<String, Set<Element>> typeElementMap = elementMap.get(packageName);
-            if (typeElementMap == null) {
-                typeElementMap = new LinkedHashMap<>();
-            }
-
-            Set<Element> variableElements = typeElementMap.get(typeName);
-            if (variableElements == null) {
-                variableElements = new LinkedHashSet<>();
-            }
-            variableElements.add(element);
-
-            typeElementMap.put(typeName, variableElements);
-            elementMap.put(packageName, typeElementMap);
-        }
-
-        return elementMap;
-    }
-
-    //解析出【绑定的点击事件】
-    private Map<String, Map<String, Set<Element>>> parseMethodElements(Set<? extends Element> elements) {
-        Map<String, Map<String, Set<Element>>> elementMap = new LinkedHashMap<>();
-        for (Element element : elements) {
-            if (element.getKind() != ElementKind.METHOD) {//不是方法直接跳过
+            if (element.getKind() != elementKind) {//不是指定的类型直接跳过
                 continue;
             }
             TypeElement typeElement = (TypeElement) element.getEnclosingElement();
@@ -128,6 +101,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
         }
         return elementMap;
     }
+
 
     //生成Java文件
     private void generateJavaFile(Map<String, Map<String, Set<Element>>> elementMap, Map<String, Map<String, Set<Element>>> packageMethodMap) {
@@ -140,9 +114,9 @@ public class YellowKnifeProcessor extends AbstractProcessor {
             Set<Map.Entry<String, Set<Element>>> typeElements = typeElementMap.entrySet();
             //
             //该包下所有类中的注入方法
-            Map<String, Set<Element>>  typeMethodMap = packageMethodMap.get(packageName);
-            if(null == typeMethodMap){
-                typeMethodMap =new LinkedHashMap<>();
+            Map<String, Set<Element>> typeMethodMap = packageMethodMap.get(packageName);
+            if (null == typeMethodMap) {
+                typeMethodMap = new LinkedHashMap<>();
             }
 
 
@@ -152,7 +126,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                 Set<Element> variableElements = typeEntry.getValue();
                 //该类中的注入方法
                 Set<Element> methodSet = typeMethodMap.get(typeName);
-                if(null == methodSet){
+                if (null == methodSet) {
                     methodSet = new LinkedHashSet<>();
                 }
 
