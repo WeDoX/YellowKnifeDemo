@@ -1,4 +1,4 @@
-package com.onedream.yellowknife_api;
+package com.onedream.yellowknife_annotation;
 
 /**
  * @author jdallen

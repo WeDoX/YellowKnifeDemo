@@ -1,5 +1,6 @@
 package com.onedream.yellowknife_compiler;
 
+import com.onedream.yellowknife_annotation.UnBinder;
 import com.onedream.yellowknife_annotation.YellowKnifeBindView;
 import com.onedream.yellowknife_annotation.YellowKnifeClickView;
 import com.squareup.javapoet.ClassName;
@@ -192,7 +193,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
 
                 TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName + "_ViewBinding")
                         .addModifiers(Modifier.PUBLIC)
-                        .addSuperinterface(ClassName.get(Constant.UNBINDER_PACKAGE_NAME, Constant.UNBINDER_CLASS_NAME))
+                        .addSuperinterface(UnBinder.class)
                         .addField(fieldSpecBuilder.build())
                         .addMethod(bindMethodBuilder.build())
                         .addMethod(unbindMethodBuilder.build());

@@ -9,9 +9,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.onedream.yellowknife_annotation.UnBinder;
 import com.onedream.yellowknife_annotation.YellowKnifeBindView;
 import com.onedream.yellowknife_annotation.YellowKnifeClickView;
-import com.onedream.yellowknife_api.UnBinder;
 import com.onedream.yellowknife_api.YellowKnife;
 import com.onedream.yellowknifedemo.R;
 
