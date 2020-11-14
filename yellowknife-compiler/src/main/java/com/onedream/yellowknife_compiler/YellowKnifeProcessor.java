@@ -57,24 +57,17 @@ public class YellowKnifeProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Map<String, Map<String, Set<Element>>> elementMap = parseFieldElements(roundEnv.getElementsAnnotatedWith(YellowKnifeBindView.class));
-        Map<String, Map<String, Set<Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(YellowKnifeClickView.class));
+        Map<String, Map<String, Map<Integer, Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(YellowKnifeClickView.class));
         generateJavaFile(elementMap, methodMap);
         return true;
     }
 
+    //Map<String, Map<String, Set<Element>>>第一个String的Key是包名，第二个String的Key是类名
     private Map<String, Map<String, Set<Element>>> parseFieldElements(Set<? extends Element> elements) {
-        return parseElements(elements, ElementKind.FIELD);
-    }
-
-    private Map<String, Map<String, Set<Element>>> parseMethodElements(Set<? extends Element> elements) {
-        return parseElements(elements, ElementKind.METHOD);
-    }
-
-    private Map<String, Map<String, Set<Element>>> parseElements(Set<? extends Element> elements, ElementKind elementKind) {
         Map<String, Map<String, Set<Element>>> elementMap = new LinkedHashMap<>();
         // 遍历全部元素
         for (Element element : elements) {
-            if (element.getKind() != elementKind) {//不是指定的类型直接跳过
+            if (element.getKind() != ElementKind.FIELD) {//不是指定的类型直接跳过
                 continue;
             }
             TypeElement typeElement = (TypeElement) element.getEnclosingElement();
@@ -102,9 +95,43 @@ public class YellowKnifeProcessor extends AbstractProcessor {
         return elementMap;
     }
 
+    //Map<String, Map<String, Set<Element>>>第一个String的Key是包名，第二个String的Key是类名
+    private Map<String, Map<String, Map<Integer, Element>>> parseMethodElements(Set<? extends Element> elements) {
+        Map<String, Map<String, Map<Integer, Element>>> elementMap = new LinkedHashMap<>();
+        // 遍历全部元素
+        for (Element element : elements) {
+            if (element.getKind() != ElementKind.METHOD) {//不是指定的类型直接跳过
+                continue;
+            }
+            TypeElement typeElement = (TypeElement) element.getEnclosingElement();
+            // 获取类名
+            String typeName = typeElement.getSimpleName().toString();
+            // 获取类的上一级元素，即包元素
+            PackageElement packageElement = (PackageElement) typeElement.getEnclosingElement();
+            // 获取包名
+            String packageName = packageElement.getQualifiedName().toString();
+
+            Map<String, Map<Integer, Element>> typeElementMap = elementMap.get(packageName);
+            if (typeElementMap == null) {
+                typeElementMap = new LinkedHashMap<>();
+            }
+
+            Map<Integer, Element> variableElements = typeElementMap.get(typeName);
+            if (variableElements == null) {
+                variableElements = new LinkedHashMap<>();
+            }
+            //String methodName = element.getSimpleName().toString();
+            YellowKnifeClickView clickView = element.getAnnotation(YellowKnifeClickView.class);
+            variableElements.put(clickView.viewId(), element);
+            typeElementMap.put(typeName, variableElements);
+            elementMap.put(packageName, typeElementMap);
+        }
+        return elementMap;
+    }
+
 
     //生成Java文件
-    private void generateJavaFile(Map<String, Map<String, Set<Element>>> elementMap, Map<String, Map<String, Set<Element>>> packageMethodMap) {
+    private void generateJavaFile(Map<String, Map<String, Set<Element>>> elementMap, Map<String, Map<String, Map<Integer, Element>>> packageMethodMap) {
         Set<Map.Entry<String, Map<String, Set<Element>>>> packageElements = elementMap.entrySet();
         for (Map.Entry<String, Map<String, Set<Element>>> packageEntry : packageElements) {
 
@@ -114,7 +141,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
             Set<Map.Entry<String, Set<Element>>> typeElements = typeElementMap.entrySet();
             //
             //该包下所有类中的注入方法
-            Map<String, Set<Element>> typeMethodMap = packageMethodMap.get(packageName);
+            Map<String, Map<Integer, Element>> typeMethodMap = packageMethodMap.get(packageName);
             if (null == typeMethodMap) {
                 typeMethodMap = new LinkedHashMap<>();
             }
@@ -125,9 +152,9 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                 String typeName = typeEntry.getKey();
                 Set<Element> variableElements = typeEntry.getValue();
                 //该类中的注入方法
-                Set<Element> methodSet = typeMethodMap.get(typeName);
+                Map<Integer, Element> methodSet = typeMethodMap.get(typeName);
                 if (null == methodSet) {
-                    methodSet = new LinkedHashSet<>();
+                    methodSet = new LinkedHashMap<>();
                 }
 
 
@@ -143,23 +170,21 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                 for (Element element : variableElements) {
                     VariableElement variableElement = (VariableElement) element;
                     String variableName = variableElement.getSimpleName().toString();
+                    //初始化控件
                     YellowKnifeBindView bindView = variableElement.getAnnotation(YellowKnifeBindView.class);
                     bindMethodBuilder.addStatement("target." + variableName + " = activity.findViewById(" + bindView.viewId() + ")");
-
-                    for (Element methodElement : methodSet) {
+                    //绑定点击事件
+                    Element methodElement = methodSet.get(bindView.viewId());
+                    if (null != methodElement) {
                         String methodName = methodElement.getSimpleName().toString();
-                        YellowKnifeClickView clickView = methodElement.getAnnotation(YellowKnifeClickView.class);
-                        if (bindView.viewId() == clickView.viewId()) {
-                            //添加点击事件
-                            bindMethodBuilder.addStatement("target." + variableName + ".setOnClickListener(new $T.OnClickListener() {\n" +
-                                    "    @Override\n" +
-                                    "    public void onClick($T v) {\n" +
-                                    "            target." + methodName + "(v);" +
-                                    "    \n }\n" +
-                                    "})", ClassName.get("android.view", "View"), ClassName.get("android.view", "View"));
-                        }
+                        //添加点击事件
+                        bindMethodBuilder.addStatement("target." + variableName + ".setOnClickListener(new $T.OnClickListener() {\n" +
+                                "    @Override\n" +
+                                "    public void onClick($T v) {\n" +
+                                "            target." + methodName + "(v);" +
+                                "    \n }\n" +
+                                "})", ClassName.get("android.view", "View"), ClassName.get("android.view", "View"));
                     }
-                    //
                     unbindMethodBuilder.addStatement("target." + variableName + " = null");
                 }
 
