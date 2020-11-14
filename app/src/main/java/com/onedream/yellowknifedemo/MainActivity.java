@@ -9,14 +9,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.onedream.TwoActivity;
 import com.onedream.yellowknife_annotation.UnBinder;
-import com.onedream.yellowknife_annotation.YellowKnifeBindView;
-import com.onedream.yellowknife_annotation.YellowKnifeClickView;
+import com.onedream.yellowknife_annotation.Bind;
+import com.onedream.yellowknife_annotation.OnClick;
 import com.onedream.yellowknife_api.YellowKnife;
 
 public class MainActivity extends AppCompatActivity {
-    @YellowKnifeBindView(viewId = R.id.btn_send)
+    @Bind(R.id.btn_send)
     Button btn_send;
-    @YellowKnifeBindView(viewId = R.id.btn_get)
+    @Bind(R.id.btn_get)
     Button btn_get;
     //
     UnBinder unBinder;
@@ -33,12 +33,12 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this,msg,Toast.LENGTH_SHORT).show();
     }
 
-    @YellowKnifeClickView(viewId = R.id.btn_send)
+    @OnClick(R.id.btn_send)
     public void onClickBtnSend(View view){
         showToast("click btn_send 我是计算机和"+view.getId());
     }
 
-    @YellowKnifeClickView(viewId = R.id.btn_get)
+    @OnClick(R.id.btn_get)
     public void onClickBtnGet(View view){
         showToast("我是第二个函数是"+view.getId());
         //

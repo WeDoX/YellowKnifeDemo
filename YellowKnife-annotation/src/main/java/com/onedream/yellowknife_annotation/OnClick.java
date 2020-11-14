@@ -10,11 +10,9 @@ import java.lang.annotation.Target;
  * @author jdallen
  * @since 2020/9/2
  */
-
 @Documented
-@Target({ElementType.FIELD})
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.CLASS)
-public @interface YellowKnifeBindView {
-    int viewId() default 0;
+public @interface OnClick {
+    int value() default 0;
 }
-

@@ -1,8 +1,8 @@
 package com.onedream.yellowknife_compiler;
 
 import com.onedream.yellowknife_annotation.UnBinder;
-import com.onedream.yellowknife_annotation.YellowKnifeBindView;
-import com.onedream.yellowknife_annotation.YellowKnifeClickView;
+import com.onedream.yellowknife_annotation.Bind;
+import com.onedream.yellowknife_annotation.OnClick;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -49,16 +49,16 @@ public class YellowKnifeProcessor extends AbstractProcessor {
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> annotationTypes = new LinkedHashSet<>();
-        annotationTypes.add(YellowKnifeBindView.class.getCanonicalName());
-        annotationTypes.add(YellowKnifeClickView.class.getCanonicalName());
+        annotationTypes.add(Bind.class.getCanonicalName());
+        annotationTypes.add(OnClick.class.getCanonicalName());
         return annotationTypes;
     }
 
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Map<String, Map<String, Set<Element>>> elementMap = parseFieldElements(roundEnv.getElementsAnnotatedWith(YellowKnifeBindView.class));
-        Map<String, Map<String, Map<Integer, Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(YellowKnifeClickView.class));
+        Map<String, Map<String, Set<Element>>> elementMap = parseFieldElements(roundEnv.getElementsAnnotatedWith(Bind.class));
+        Map<String, Map<String, Map<Integer, Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(OnClick.class));
         generateJavaFile(elementMap, methodMap);
         return true;
     }
@@ -122,8 +122,8 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                 variableElements = new LinkedHashMap<>();
             }
             //String methodName = element.getSimpleName().toString();
-            YellowKnifeClickView clickView = element.getAnnotation(YellowKnifeClickView.class);
-            variableElements.put(clickView.viewId(), element);
+            OnClick clickView = element.getAnnotation(OnClick.class);
+            variableElements.put(clickView.value(), element);
             typeElementMap.put(typeName, variableElements);
             elementMap.put(packageName, typeElementMap);
         }
@@ -172,10 +172,10 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                     VariableElement variableElement = (VariableElement) element;
                     String variableName = variableElement.getSimpleName().toString();
                     //初始化控件
-                    YellowKnifeBindView bindView = variableElement.getAnnotation(YellowKnifeBindView.class);
-                    bindMethodBuilder.addStatement("target." + variableName + " = activity.findViewById(" + bindView.viewId() + ")");
+                    Bind bindView = variableElement.getAnnotation(Bind.class);
+                    bindMethodBuilder.addStatement("target." + variableName + " = activity.findViewById(" + bindView.value() + ")");
                     //绑定点击事件
-                    Element methodElement = methodSet.get(bindView.viewId());
+                    Element methodElement = methodSet.get(bindView.value());
                     if (null != methodElement) {
                         String methodName = methodElement.getSimpleName().toString();
                         //添加点击事件

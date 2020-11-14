@@ -10,15 +10,15 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.onedream.yellowknife_annotation.UnBinder;
-import com.onedream.yellowknife_annotation.YellowKnifeBindView;
-import com.onedream.yellowknife_annotation.YellowKnifeClickView;
+import com.onedream.yellowknife_annotation.Bind;
+import com.onedream.yellowknife_annotation.OnClick;
 import com.onedream.yellowknife_api.YellowKnife;
 import com.onedream.yellowknifedemo.R;
 
 public class TwoActivity extends AppCompatActivity {
-    @YellowKnifeBindView(viewId = R.id.tv_back)
+    @Bind(R.id.tv_back)
     TextView tv_back;
-    @YellowKnifeBindView(viewId = R.id.btn_send)
+    @Bind(R.id.btn_send)
     Button btn_send;
     //
     UnBinder unBinder;
@@ -33,7 +33,7 @@ public class TwoActivity extends AppCompatActivity {
         tv_back.setText("点击我关闭当前界面");
     }
 
-    @YellowKnifeClickView(viewId = R.id.tv_back)
+    @OnClick(R.id.tv_back)
     public void onClickBtnSend(View v) {
         finish();
     }
