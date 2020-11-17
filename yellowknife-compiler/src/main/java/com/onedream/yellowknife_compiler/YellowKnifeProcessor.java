@@ -1,8 +1,8 @@
 package com.onedream.yellowknife_compiler;
 
-import com.onedream.yellowknife_annotation.UnBinder;
 import com.onedream.yellowknife_annotation.Bind;
 import com.onedream.yellowknife_annotation.OnClick;
+import com.onedream.yellowknife_annotation.UnBinder;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -33,6 +33,9 @@ import javax.lang.model.element.VariableElement;
  */
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class YellowKnifeProcessor extends AbstractProcessor {
+
+    private static final ClassName CLASS_NAME_OF_VIEW = ClassName.get("android.view", "View");
+
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -121,9 +124,14 @@ public class YellowKnifeProcessor extends AbstractProcessor {
             if (variableElements == null) {
                 variableElements = new LinkedHashMap<>();
             }
-            //String methodName = element.getSimpleName().toString();
+            //
             OnClick clickView = element.getAnnotation(OnClick.class);
-            variableElements.put(clickView.value(), element);
+            int[] methodBindViewIdArr = clickView.value();
+            if (null != methodBindViewIdArr && methodBindViewIdArr.length > 0) {
+                for (int clickViewId : methodBindViewIdArr) {
+                    variableElements.put(clickViewId, element);
+                }
+            }
             typeElementMap.put(typeName, variableElements);
             elementMap.put(packageName, typeElementMap);
         }
@@ -168,6 +176,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                 MethodSpec.Builder unbindMethodBuilder = MethodSpec.methodBuilder("unbind")
                         .addAnnotation(Override.class)
                         .addModifiers(Modifier.PUBLIC);
+
                 for (Element element : variableElements) {
                     VariableElement variableElement = (VariableElement) element;
                     String variableName = variableElement.getSimpleName().toString();
@@ -180,13 +189,29 @@ public class YellowKnifeProcessor extends AbstractProcessor {
                         String methodName = methodElement.getSimpleName().toString();
                         //添加点击事件
                         bindMethodBuilder.addStatement("target." + variableName + ".setOnClickListener(new $T.OnClickListener() {\n" +
-                                "    @Override\n" +
-                                "    public void onClick($T v) {\n" +
-                                "            target." + methodName + "(v);" +
-                                "    \n }\n" +
-                                "})", ClassName.get("android.view", "View"), ClassName.get("android.view", "View"));
+                                "\t@Override\n" +
+                                "\tpublic void onClick($T v) {\n" +
+                                "\t\ttarget." + methodName + "(v);\n" +
+                                "\t}\n" +
+                                "})", CLASS_NAME_OF_VIEW, CLASS_NAME_OF_VIEW);
+                        //移除调绑定的方法
+                        methodSet.remove(bindView.value());
                     }
+                    //添加解绑方法的语句
                     unbindMethodBuilder.addStatement("target." + variableName + " = null");
+                }
+
+                //剩下的绑定方法(没有使用BindView绑定的，且有绑定点击事件的控件ID)
+                if (null != methodSet && methodSet.size() > 0) {
+                    for (Map.Entry<Integer, Element> clickMethodEntry : methodSet.entrySet()) {
+                        //添加点击事件
+                        bindMethodBuilder.addStatement("activity.findViewById(" + clickMethodEntry.getKey() + ").setOnClickListener(new $T.OnClickListener() {\n" +
+                                "\t@Override\n" +
+                                "\tpublic void onClick($T v) {\n" +
+                                "\t\ttarget." + clickMethodEntry.getValue().getSimpleName().toString() + "(v);\n" +
+                                "\t}\n" +
+                                "})", CLASS_NAME_OF_VIEW, CLASS_NAME_OF_VIEW);
+                    }
                 }
 
                 unbindMethodBuilder.addStatement("target = null");
@@ -208,4 +233,6 @@ public class YellowKnifeProcessor extends AbstractProcessor {
             }
         }
     }
+
+
 }

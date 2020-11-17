@@ -14,5 +14,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.CLASS)
 public @interface OnClick {
-    int value() default 0;
+    int[] value();
 }
