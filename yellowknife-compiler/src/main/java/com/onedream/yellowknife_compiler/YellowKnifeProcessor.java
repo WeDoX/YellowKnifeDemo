@@ -2,6 +2,7 @@ package com.onedream.yellowknife_compiler;
 
 import com.onedream.yellowknife_annotation.Bind;
 import com.onedream.yellowknife_annotation.OnClick;
+import com.onedream.yellowknife_annotation.Route;
 import com.onedream.yellowknife_annotation.UnBinder;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
@@ -10,6 +11,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -60,10 +62,51 @@ public class YellowKnifeProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        changeRoute(roundEnv.getElementsAnnotatedWith(Route.class));
+        //
         Map<String, Map<String, Set<Element>>> elementMap = parseFieldElements(roundEnv.getElementsAnnotatedWith(Bind.class));
         Map<String, Map<String, Map<Integer, Element>>> methodMap = parseMethodElements(roundEnv.getElementsAnnotatedWith(OnClick.class));
         generateJavaFile(elementMap, methodMap);
+
         return true;
+    }
+
+    private void changeRoute(Set<? extends Element> elements) {
+        String statement = "";
+        for (Element element : elements) {
+            if (element.getKind() != ElementKind.CLASS) {//不是指定的类型直接跳过
+                continue;
+            }
+            TypeElement typeElement = (TypeElement)element;
+            // 获取类的上一级元素，即包元素
+            PackageElement packageElement = (PackageElement) typeElement.getEnclosingElement();
+            // 获取包名
+            String packageName = packageElement.getQualifiedName().toString();
+            //
+            //
+            String key = typeElement.getAnnotation(Route.class).value();
+            statement += "\tif(key.equals(\""+key+"\")){\n"+ "\treturn Class.forName(\""+typeElement.getQualifiedName().toString()+"\");\n} \n";
+        }
+        statement += "\n return null\n";
+
+        MethodSpec.Builder bindMethodBuilder = MethodSpec.methodBuilder("get")
+                .returns(ClassName.get("java.lang","Class"))
+                .addException(ClassName.get("java.lang","ClassNotFoundException"))
+                .addModifiers(Modifier.PUBLIC)
+                .addModifiers(Modifier.STATIC)
+                .addParameter(ClassName.get("java.lang","String"), "key")
+                .addStatement(statement);
+        //
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder("XRouterMap")
+                .addModifiers(Modifier.PUBLIC)
+                .addMethod(bindMethodBuilder.build());
+        JavaFile javaFile = JavaFile.builder("com.onedream", typeBuilder.build()).build();
+
+        try {
+            javaFile.writeTo(processingEnv.getFiler());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //Map<String, Map<String, Set<Element>>>第一个String的Key是包名，第二个String的Key是类名

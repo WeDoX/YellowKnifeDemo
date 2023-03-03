@@ -11,10 +11,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.onedream.yellowknife_annotation.Bind;
 import com.onedream.yellowknife_annotation.OnClick;
+import com.onedream.yellowknife_annotation.Route;
 import com.onedream.yellowknife_annotation.UnBinder;
 import com.onedream.yellowknife_api.YellowKnife;
 import com.onedream.yellowknifedemo.R;
 
+@Route("/me/two")
 public class TwoActivity extends AppCompatActivity {
     @Bind(R.id.tv_back)
     TextView tv_back;
@@ -30,7 +32,12 @@ public class TwoActivity extends AppCompatActivity {
         //
         unBinder = YellowKnife.bind(this);
         //
-        tv_back.setText("点击我关闭当前界面");
+        String name ="";
+        if(null != getIntent()){
+            name = getIntent().getStringExtra("name");
+        }
+        //
+        tv_back.setText("点击我关闭当前界面:"+name);
     }
 
     @OnClick({R.id.tv_back, R.id.btn_send})

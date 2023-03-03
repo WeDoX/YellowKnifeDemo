@@ -8,11 +8,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.onedream.TwoActivity;
+import com.onedream.yellowknife_annotation.Route;
 import com.onedream.yellowknife_annotation.UnBinder;
 import com.onedream.yellowknife_annotation.Bind;
 import com.onedream.yellowknife_annotation.OnClick;
+import com.onedream.yellowknife_api.XRouter;
 import com.onedream.yellowknife_api.YellowKnife;
 
+@Route("/me/main")
 public class MainActivity extends AppCompatActivity {
     @Bind(R.id.btn_send)
     Button btn_send;
@@ -42,7 +45,8 @@ public class MainActivity extends AppCompatActivity {
     public void onClickBtnGet(View view){
         showToast("我是第二个函数是"+view.getId());
         //
-        TwoActivity.actionStart(MainActivity.this);
+        XRouter.build("/me/two").withString("name","我是陈贵坚").navigation(this);
+        //TwoActivity.actionStart(MainActivity.this);
     }
 
 
