@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public void onClickBtnGet(View view){
         showToast("我是第二个函数是"+view.getId());
         //
-        XRouter.build("/me/two").withString("name","我是陈贵坚").navigation(this);
+        XRouter.build("/me/two").withString("name","我是陈贵坚").navigation();
         //TwoActivity.actionStart(MainActivity.this);
     }
 

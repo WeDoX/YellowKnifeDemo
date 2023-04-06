@@ -1,5 +1,6 @@
 package com.onedream.yellowknife_api;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 
@@ -35,6 +36,10 @@ public class XRouterParams {
         return this;
     }
 
+    public void navigation() {
+        navigation(XRouter.getApplication());
+    }
+
     public void navigation(Context context) {
         try {
             Class<?> XRouterMapClass = Class.forName("com.onedream.XRouterMap");
@@ -58,6 +63,9 @@ public class XRouterParams {
             while (withBooleanMapIterator.hasNext()) {
                 Map.Entry<String, Boolean> map = withBooleanMapIterator.next();
                 intent.putExtra(map.getKey(), map.getValue());
+            }
+            if(context instanceof Application){
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             }
             //
             context.startActivity(intent);
