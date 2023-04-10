@@ -63,7 +63,7 @@ public class YellowKnifeProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Map<KeyForClassFile, Set<Element>> bindFieldElementMap = parseBindFieldElements(roundEnv.getElementsAnnotatedWith(Bind.class));
         Map<KeyForClassFile, Map<Integer, Element>> onClickMethodMap = parseOnClickMethodElements(roundEnv.getElementsAnnotatedWith(OnClick.class));
-        generateJavaFile(bindFieldElementMap, onClickMethodMap);
+        generateAllJavaFile(bindFieldElementMap, onClickMethodMap);
         return true;
     }
 
@@ -127,35 +127,41 @@ public class YellowKnifeProcessor extends AbstractProcessor {
 
 
     //生成Java文件
-    private void generateJavaFile(Map<KeyForClassFile, Set<Element>> bindFieldElementMap, Map<KeyForClassFile, Map<Integer, Element>> onClickMethodMap) {
+    private void generateAllJavaFile(Map<KeyForClassFile, Set<Element>> bindFieldElementMap, Map<KeyForClassFile, Map<Integer, Element>> onClickMethodMap) {
         Set<Map.Entry<KeyForClassFile, Set<Element>>> packageElementSet = bindFieldElementMap.entrySet();
         for (Map.Entry<KeyForClassFile, Set<Element>> bindFieldElementEntry : packageElementSet) {
             Map<Integer, Element> classOnClickMethodMap = onClickMethodMap.get(bindFieldElementEntry.getKey());
             if (null == classOnClickMethodMap) {
                 classOnClickMethodMap = new HashMap<Integer, Element>();
             }
-            oneClass(bindFieldElementEntry, classOnClickMethodMap);
+            generateJavaFile(bindFieldElementEntry, classOnClickMethodMap);
         }
     }
 
-    private void oneClass(Map.Entry<KeyForClassFile, Set<Element>> bindFieldElementEntry, Map<Integer, Element> classOnClickMethodMap) {
+    private void generateJavaFile(Map.Entry<KeyForClassFile, Set<Element>> bindFieldElementEntry, Map<Integer, Element> classOnClickMethodMap) {
         KeyForClassFile keyForClass = bindFieldElementEntry.getKey();
-        Set<Element> variableElements = bindFieldElementEntry.getValue();
-        ClassName className = ClassName.get(keyForClass.getPackageName(), keyForClass.getClassName());
-        FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(className, "target", Modifier.PRIVATE);
+        String filePackageName = keyForClass.getPackageName();
+        String fileClassName = keyForClass.getClassName();
+        //
+        ClassName classNameOfCurrentActivity = ClassName.get(filePackageName, fileClassName);
+        //私有变量
+        FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(classNameOfCurrentActivity, "target", Modifier.PRIVATE);
+        //bind方法建造者
         MethodSpec.Builder bindMethodBuilder = MethodSpec.methodBuilder("bind")
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(className, "activity")
+                .addParameter(classNameOfCurrentActivity, "activity")
                 .addStatement("target = activity");
+        //unbind方法建造者
         MethodSpec.Builder unbindMethodBuilder = MethodSpec.methodBuilder("unbind")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC);
-
+        //
+        Set<Element> variableElements = bindFieldElementEntry.getValue();
         for (Element element : variableElements) {
             VariableElement variableElement = (VariableElement) element;
-            String variableName = variableElement.getSimpleName().toString();
             //初始化控件
             Bind bindView = variableElement.getAnnotation(Bind.class);
+            String variableName = variableElement.getSimpleName().toString();
             bindMethodBuilder.addStatement("target." + variableName + " = activity.findViewById(" + bindView.value() + ")");
             //绑定点击事件
             Element methodElement = classOnClickMethodMap.get(bindView.value());
@@ -190,14 +196,14 @@ public class YellowKnifeProcessor extends AbstractProcessor {
 
         unbindMethodBuilder.addStatement("target = null");
 
-        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(keyForClass.getClassName() + "_ViewBinding")
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(fileClassName + "_ViewBinding")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(UnBinder.class)
                 .addField(fieldSpecBuilder.build())
                 .addMethod(bindMethodBuilder.build())
                 .addMethod(unbindMethodBuilder.build());
 
-        JavaFile javaFile = JavaFile.builder(keyForClass.getPackageName(), typeBuilder.build()).build();
+        JavaFile javaFile = JavaFile.builder(filePackageName, typeBuilder.build()).build();
 
         try {
             javaFile.writeTo(processingEnv.getFiler());
